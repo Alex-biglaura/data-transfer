@@ -1,0 +1,46 @@
+# -*- coding: utf-8 -*-
+import sqlite3
+import MySQLdb
+import os
+list=[]
+for root,dirs,files in os.walk(r'C:\Users\sxchuyang\Desktop\新建文件夹\Data\History'):
+    for name in files:
+        list.append(os.path.join(root,name))
+
+for name in list:
+    fromDict = {'type': 'sqlite', 'connect_parameters': name}
+    print(name)
+    mysql_name = 'db' + name.split('\\')[-1].split('.')[0]
+    toDict = {'type': 'mysql', 'connect_parameters': {'host': 'localhost', 'username': 'root', 'password': '123456',
+                                                          'port': 3306, 'dname':mysql_name}}
+    print(mysql_name)
+
+
+
+    def convertDB(fromDict, toDict):
+        conn_from = sqlite3.connect(fromDict['connect_parameters'])
+        # 使用execute方法执行SQL语句
+        cur_from = conn_from.execute("select rowid,TargetName,Level,Description,iValue from k_target_value")
+        list = cur_from.fetchall()
+        for each in list:
+            print(each)
+        conn_to = MySQLdb.connect(host=toDict['connect_parameters']['host'],
+                                      user=toDict['connect_parameters']['username'],
+                                      passwd=toDict['connect_parameters']['password'],
+                                      db=toDict['connect_parameters']['dname'],
+                                      port=toDict['connect_parameters']['port'],
+                                      charset='utf8')
+        cur_to = conn_to.cursor()
+        cur_to.execute('''CREATE TABLE if not exists k_target_value
+        (rowid INT not NULL primary key ,
+        TargetName varchar(200) not NULL,
+        Level INT NOT NULL,
+        Description varchar(20)  NULL,
+        iValue INT  NULL);''')
+        cur_to.executemany("INSERT INTO k_target_value (rowid,TargetName,Level,Description,iValue) \
+                VALUES (%s,%s,%s,%s,%s)",
+                               list);
+        conn_to.commit()
+
+
+    convertDB(fromDict, toDict)
